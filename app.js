@@ -6,7 +6,8 @@ var logger = require('morgan');
 // konfigurasi API
 const testRouter = require('./app/test/router');
 
-const app = express();
+const app = express()
+const URI = "/api/v1"
 
 app.use(logger('dev'));
 app.use(express.json());
@@ -15,6 +16,6 @@ app.use(cookieParser());
 app.use(express.static(path.join(__dirname, 'public')));
 
 // API
-app.use('/test', testRouter);
+app.use(`${URI}/test`, testRouter);
 
 module.exports = app;
