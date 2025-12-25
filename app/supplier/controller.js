@@ -1,10 +1,14 @@
-const { setDoc } = require("firebase/firestore")
-const { colSupplier } = require("../../db/firebase")
+const { setDoc, getDocs, doc,
+        serverTimestamp, 
+        query, where } = require("firebase/firestore")
+const { db, colSupplier } = require("../../db/firebase")
 
 module.exports = {
     register: async(req, res) => {
         try {
             const { supplierName, origin, emailSupplier, ethWalletAddress } = req.body
+
+            console.log(req.body)
 
             if(!supplierName || !origin || !emailSupplier || !ethWalletAddress) {
                 return res.status(400).json({ message: "All fields are required" })
@@ -25,7 +29,8 @@ module.exports = {
                     supplierName,
                     origin,
                     emailSupplier,
-                    ethWalletAddress
+                    ethWalletAddress,
+                    createdAt: serverTimestamp(),
                 })
                 res.status(201).json({ message: "Supplier registered successfully! The administrator must verify your data." })
             }
