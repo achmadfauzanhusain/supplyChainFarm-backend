@@ -30,6 +30,7 @@ module.exports = {
                     origin,
                     emailSupplier,
                     ethWalletAddress,
+                    status: "unverified",
                     createdAt: serverTimestamp(),
                 })
                 res.status(201).json({ message: "Supplier registered successfully! The administrator must verify your data." })
