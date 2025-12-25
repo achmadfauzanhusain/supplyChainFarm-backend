@@ -8,8 +8,6 @@ module.exports = {
         try {
             const { supplierName, origin, emailSupplier, ethWalletAddress } = req.body
 
-            console.log(req.body)
-
             if(!supplierName || !origin || !emailSupplier || !ethWalletAddress) {
                 return res.status(400).json({ message: "All fields are required" })
             }
