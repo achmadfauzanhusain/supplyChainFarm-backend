@@ -6,9 +6,9 @@ const { db, colSupplier } = require("../../db/firebase")
 module.exports = {
     register: async(req, res) => {
         try {
-            const { supplierName, origin, emailSupplier, ethWalletAddress } = req.body
+            const { supplierName, origin, emailSupplier, ethWalletAddress, description } = req.body
 
-            if(!supplierName || !origin || !emailSupplier || !ethWalletAddress) {
+            if(!supplierName || !origin || !emailSupplier || !ethWalletAddress || !description) {
                 return res.status(400).json({ message: "All fields are required" })
             }
 
@@ -28,6 +28,7 @@ module.exports = {
                     origin,
                     emailSupplier,
                     ethWalletAddress,
+                    description,
                     status: "unverified",
                     createdAt: serverTimestamp(),
                 })
