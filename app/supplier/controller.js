@@ -3,6 +3,7 @@ const { setDoc, getDoc, doc,
         serverTimestamp, 
         query, where } = require("firebase/firestore")
 const { colSupplier } = require("../../db/firebase")
+const { ethers } = require("ethers")
 
 module.exports = {
     register: async(req, res) => {
@@ -11,6 +12,10 @@ module.exports = {
 
             if(!supplierName || !origin || !emailSupplier || !ethWalletAddress || !description) {
                 return res.status(400).json({ message: "All fields are required" })
+            }
+
+            if(!ethers.isAddress(ethWalletAddress)) {
+                return res.status(400).json({ message: "Invalid Ethereum wallet address" })
             }
 
             if(/\s/.test(ethWalletAddress)) {
