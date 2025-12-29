@@ -1,4 +1,4 @@
-const { setDoc, getDocs, doc,
+const { setDoc, getDoc, doc,
         onSnapshot,
         serverTimestamp, 
         query, where } = require("firebase/firestore")
@@ -66,7 +66,7 @@ module.exports = {
                 }, 5000)
             })
             const suppliers = await fetchData
-            res.status(200).json(suppliers)
+            res.status(200).json({ data: suppliers })
         } catch (err) {
             res.status(500).json({ message: err.message || "Internal server error" })
         }
@@ -98,7 +98,23 @@ module.exports = {
                 }, 5000)
             })
             const suppliers = await fetchData
-            res.status(200).json(suppliers)
+            res.status(200).json({ data: suppliers })
+        } catch (err) {
+            res.status(500).json({ message: err.message || "Internal server error" })
+        }
+    },
+    detailSupplier: async (req, res) => {
+        try {
+            const { ethWalletAddress } = req.params
+            const docRef = doc(colSupplier, ethWalletAddress)
+
+            const docSnapshot = await getDoc(docRef)
+            if(docSnapshot.exists()) {
+                const supplierData = { ...docSnapshot.data(), id: docSnapshot.id }
+                res.status(200).json({ data: supplierData })
+            } else {
+                res.status(400).json({ message: "Supplier not found" })
+            }
         } catch (err) {
             res.status(500).json({ message: err.message || "Internal server error" })
         }
