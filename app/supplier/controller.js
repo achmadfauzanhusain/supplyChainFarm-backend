@@ -1,7 +1,8 @@
 const { setDoc, getDocs, doc,
+        onSnapshot,
         serverTimestamp, 
         query, where } = require("firebase/firestore")
-const { db, colSupplier } = require("../../db/firebase")
+const { colSupplier } = require("../../db/firebase")
 
 module.exports = {
     register: async(req, res) => {
@@ -34,6 +35,38 @@ module.exports = {
                 })
                 res.status(201).json({ message: "Supplier registered successfully! The administrator must verify your data." })
             }
+        } catch (err) {
+            res.status(500).json({ message: err.message || "Internal server error" })
+        }
+    },
+    notRegisteredSupplier: async (req, res) => {
+        try {
+            const q = query(colSupplier, where("status", "==", "unverified"))
+            let sentResponse = false
+
+            const fetchData = new Promise((resolve, reject) => {
+                const unsubscribe = onSnapshot(q, (snapshot) => {
+                    if(!sentResponse) {
+                        let suppliers = []
+                        snapshot.docs.forEach((doc) => {
+                            suppliers.push({ ...doc.data(), id: doc.id })
+                        })
+                        sentResponse = true
+                        resolve(suppliers)
+                    }
+                }, (error) => {
+                    reject(error)
+                })
+
+                setTimeout(() => {
+                    if(!sentResponse) {
+                        unsubscribe()
+                        reject(new Error("Timeout: Data retrieval took too long"))
+                    }
+                }, 5000)
+            })
+            const suppliers = await fetchData
+            res.status(200).json(suppliers)
         } catch (err) {
             res.status(500).json({ message: err.message || "Internal server error" })
         }
