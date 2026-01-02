@@ -1,4 +1,4 @@
-const { setDoc, getDoc, getDocs, doc,
+const { setDoc, getDoc, getDocs, doc, updateDoc,
         onSnapshot,
         serverTimestamp, 
         query, where } = require("firebase/firestore")
@@ -122,6 +122,46 @@ module.exports = {
             }
         } catch (err) {
             res.status(500).json({ message: err.message || "Internal server error" })
+        }
+    },
+    changeStatus: async (req, res) => {
+        try {
+            const { ethWalletAddress } = req.body
+
+            if (!ethWalletAddress) {
+                return res.status(400).json({ message: "ethWalletAddress is required" })
+            }
+
+            const docRef = doc(colSupplier, ethWalletAddress)
+            const docSnapshot = await getDoc(docRef)
+
+            if (!docSnapshot.exists()) {
+                return res.status(404).json({ message: "Supplier not found" })
+            }
+
+            const currentStatus = docSnapshot.data().status
+
+            let newStatus
+            if (currentStatus === "unverified") {
+                newStatus = "verified"
+            } else if (currentStatus === "verified") {
+                newStatus = "unverified"
+            } else {
+                return res.status(400).json({ message: "Invalid supplier status" })
+            }
+
+            await updateDoc(docRef, {
+                status: newStatus,
+                updatedAt: serverTimestamp()
+            })
+
+            res.status(200).json({
+                message: `Supplier status updated to ${newStatus}`,
+                status: newStatus
+            })
+
+        } catch (error) {
+            res.status(500).json({ message: error.message || "Internal server error" })
         }
     }
 }
