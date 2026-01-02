@@ -1,4 +1,4 @@
-const { setDoc, getDoc, doc,
+const { setDoc, getDoc, getDocs, doc,
         onSnapshot,
         serverTimestamp, 
         query, where } = require("firebase/firestore")
