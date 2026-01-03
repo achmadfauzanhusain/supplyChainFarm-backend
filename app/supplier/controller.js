@@ -1,4 +1,4 @@
-const { setDoc, getDoc, getDocs, doc, updateDoc,
+const { setDoc, getDoc, getDocs, doc, updateDoc, deleteDoc,
         onSnapshot,
         serverTimestamp, 
         query, where } = require("firebase/firestore")
@@ -160,6 +160,28 @@ module.exports = {
                 status: newStatus
             })
 
+        } catch (error) {
+            res.status(500).json({ message: error.message || "Internal server error" })
+        }
+    },
+    deleteSupplier: async (req, res) => {
+        try {
+            const { ethWalletAddress } = req.body
+
+            if (!ethWalletAddress) {
+                return res.status(400).json({ message: "ethWalletAddress is required" })
+            }
+
+            const docRef = doc(colSupplier, ethWalletAddress)
+            const docSnapshot = await getDoc(docRef)
+            
+            if (!docSnapshot.exists()) {
+                return res.status(404).json({ message: "Supplier not found" })
+            }
+
+            await deleteDoc(docRef)
+
+            res.status(200).json({ message: "Supplier deleted successfully" })
         } catch (error) {
             res.status(500).json({ message: error.message || "Internal server error" })
         }
