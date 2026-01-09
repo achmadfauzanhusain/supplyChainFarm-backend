@@ -185,5 +185,26 @@ module.exports = {
         } catch (error) {
             res.status(500).json({ message: error.message || "Internal server error" })
         }
+    },
+    searchSupplier: async (req, res) => {
+        try {
+            const { supplierName } = req.body
+
+            const q = query(
+                colSupplier,
+                where("supplierName", ">=", supplierName),
+                where("supplierName", "<=", supplierName + "\uf8ff")
+            )
+
+            const snapshot = await getDocs(q)
+            const results = snapshot.docs.map(doc => ({
+                ...doc.data(),
+                id: doc.id
+            }))
+
+            res.status(200).json({ data: results })
+        } catch (error) {
+            res.status(500).json({ message: error.message || "Internal server error" })
+        }
     }
 }
