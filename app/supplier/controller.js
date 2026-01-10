@@ -1,8 +1,5 @@
-const { setDoc, getDoc, getDocs, doc, updateDoc, deleteDoc,
-        onSnapshot,
-        serverTimestamp, 
-        query, where } = require("firebase/firestore")
-const { colSupplier } = require("../../db/firebase")
+const admin = require("firebase-admin")
+const { colSupplier } = require("../../db/firebase") // colSupplier dari Admin SDK
 const { ethers } = require("ethers")
 
 module.exports = {
@@ -23,20 +20,18 @@ module.exports = {
             }
 
             // cek duplikat ethWalletAddress
-            const q = query(colSupplier, where("ethWalletAddress", "==", ethWalletAddress))
-            const querySnapshot = await getDocs(q)
-
+            const querySnapshot = await colSupplier.where("ethWalletAddress", "==", ethWalletAddress).get()
             if (!querySnapshot.empty) {
                 return res.status(400).json({ message: "Ethereum wallet address already registered" })
             } else {
-                await setDoc(doc(colSupplier, ethWalletAddress), {
+                await colSupplier.doc(ethWalletAddress).set({
                     supplierName,
                     origin,
                     emailSupplier,
                     ethWalletAddress,
                     description,
                     status: "unverified",
-                    createdAt: serverTimestamp(),
+                    createdAt: admin.firestore.FieldValue.serverTimestamp()
                 })
                 res.status(201).json({ message: "Supplier registered successfully! The administrator must verify your data." })
             }
@@ -44,79 +39,33 @@ module.exports = {
             res.status(500).json({ message: err.message || "Internal server error" })
         }
     },
-    notRegisteredSupplier: async (req, res) => {
+
+    notRegisteredSupplier: async(req, res) => {
         try {
-            const q = query(colSupplier, where("status", "==", "unverified"))
-            let sentResponse = false
-
-            const fetchData = new Promise((resolve, reject) => {
-                const unsubscribe = onSnapshot(q, (snapshot) => {
-                    if(!sentResponse) {
-                        let suppliers = []
-                        snapshot.docs.forEach((doc) => {
-                            suppliers.push({ ...doc.data(), id: doc.id })
-                        })
-                        sentResponse = true
-                        resolve(suppliers)
-                    }
-                }, (error) => {
-                    reject(error)
-                })
-
-                setTimeout(() => {
-                    if(!sentResponse) {
-                        unsubscribe()
-                        reject(new Error("Timeout: Data retrieval took too long"))
-                    }
-                }, 5000)
-            })
-            const suppliers = await fetchData
+            const querySnapshot = await colSupplier.where("status", "==", "unverified").get()
+            const suppliers = querySnapshot.docs.map(doc => ({ ...doc.data(), id: doc.id }))
             res.status(200).json({ data: suppliers })
         } catch (err) {
             res.status(500).json({ message: err.message || "Internal server error" })
         }
     },
-    registeredSupplier: async (req, res) => {
+
+    registeredSupplier: async(req, res) => {
         try {
-            const q = query(colSupplier, where("status", "==", "verified"))
-            let sentResponse = false
-
-            const fetchData = new Promise((resolve, reject) => {
-                const unsubscribe = onSnapshot(q, (snapshot) => {
-                    if(!sentResponse) {
-                        let suppliers = []
-                        snapshot.docs.forEach((doc) => {
-                            suppliers.push({ ...doc.data(), id: doc.id })
-                        })
-                        sentResponse = true
-                        resolve(suppliers)
-                    }
-                }, (error) => {
-                    reject(error)
-                })
-
-                setTimeout(() => {
-                    if(!sentResponse) {
-                        unsubscribe()
-                        reject(new Error("Timeout: Data retrieval took too long"))
-                    }
-                }, 5000)
-            })
-            const suppliers = await fetchData
+            const querySnapshot = await colSupplier.where("status", "==", "verified").get()
+            const suppliers = querySnapshot.docs.map(doc => ({ ...doc.data(), id: doc.id }))
             res.status(200).json({ data: suppliers })
         } catch (err) {
             res.status(500).json({ message: err.message || "Internal server error" })
         }
     },
-    detailSupplier: async (req, res) => {
+
+    detailSupplier: async(req, res) => {
         try {
             const { ethWalletAddress } = req.params
-            const docRef = doc(colSupplier, ethWalletAddress)
-
-            const docSnapshot = await getDoc(docRef)
-            if(docSnapshot.exists()) {
-                const supplierData = { ...docSnapshot.data(), id: docSnapshot.id }
-                res.status(200).json({ data: supplierData })
+            const docSnapshot = await colSupplier.doc(ethWalletAddress).get()
+            if(docSnapshot.exists) {
+                res.status(200).json({ data: { ...docSnapshot.data(), id: docSnapshot.id } })
             } else {
                 res.status(400).json({ message: "Supplier not found" })
             }
@@ -124,87 +73,66 @@ module.exports = {
             res.status(500).json({ message: err.message || "Internal server error" })
         }
     },
-    changeStatus: async (req, res) => {
+
+    changeStatus: async(req, res) => {
         try {
             const { ethWalletAddress } = req.body
+            if (!ethWalletAddress) return res.status(400).json({ message: "ethWalletAddress is required" })
 
-            if (!ethWalletAddress) {
-                return res.status(400).json({ message: "ethWalletAddress is required" })
-            }
+            const docRef = colSupplier.doc(ethWalletAddress)
+            const docSnapshot = await docRef.get()
 
-            const docRef = doc(colSupplier, ethWalletAddress)
-            const docSnapshot = await getDoc(docRef)
-
-            if (!docSnapshot.exists()) {
-                return res.status(404).json({ message: "Supplier not found" })
-            }
+            if (!docSnapshot.exists) return res.status(404).json({ message: "Supplier not found" })
 
             const currentStatus = docSnapshot.data().status
-
             let newStatus
-            if (currentStatus === "unverified") {
-                newStatus = "verified"
-            } else if (currentStatus === "verified") {
-                newStatus = "unverified"
-            } else {
-                return res.status(400).json({ message: "Invalid supplier status" })
-            }
+            if (currentStatus === "unverified") newStatus = "verified"
+            else if (currentStatus === "verified") newStatus = "unverified"
+            else return res.status(400).json({ message: "Invalid supplier status" })
 
-            await updateDoc(docRef, {
+            await docRef.update({
                 status: newStatus,
-                updatedAt: serverTimestamp()
+                updatedAt: admin.firestore.FieldValue.serverTimestamp()
             })
 
             res.status(200).json({
                 message: `Supplier status updated to ${newStatus}`,
                 status: newStatus
             })
-
-        } catch (error) {
-            res.status(500).json({ message: error.message || "Internal server error" })
+        } catch (err) {
+            res.status(500).json({ message: err.message || "Internal server error" })
         }
     },
-    deleteSupplier: async (req, res) => {
+
+    deleteSupplier: async(req, res) => {
         try {
             const { ethWalletAddress } = req.body
+            if (!ethWalletAddress) return res.status(400).json({ message: "ethWalletAddress is required" })
 
-            if (!ethWalletAddress) {
-                return res.status(400).json({ message: "ethWalletAddress is required" })
-            }
+            const docRef = colSupplier.doc(ethWalletAddress)
+            const docSnapshot = await docRef.get()
+            if (!docSnapshot.exists) return res.status(404).json({ message: "Supplier not found" })
 
-            const docRef = doc(colSupplier, ethWalletAddress)
-            const docSnapshot = await getDoc(docRef)
-            
-            if (!docSnapshot.exists()) {
-                return res.status(404).json({ message: "Supplier not found" })
-            }
-
-            await deleteDoc(docRef)
-
+            await docRef.delete()
             res.status(200).json({ message: "Supplier deleted successfully" })
-        } catch (error) {
-            res.status(500).json({ message: error.message || "Internal server error" })
+        } catch (err) {
+            res.status(500).json({ message: err.message || "Internal server error" })
         }
     },
-    searchSupplier: async (req, res) => {
+
+    searchSupplier: async(req, res) => {
         try {
             const { supplierName } = req.body
-
-            const q = query(
-                colSupplier,
-                where("supplierName", ">=", supplierName),
-                where("supplierName", "<=", supplierName + "\uf8ff")
-            )
-
-            const snapshot = await getDocs(q)
-            const results = snapshot.docs.map(doc => ({
-                ...doc.data(),
-                id: doc.id
-            }))
-
+            const querySnapshot = await colSupplier
+                .orderBy("supplierName")
+                .startAt(supplierName)
+                .endAt(supplierName + "\uf8ff")
+                .get()
+            
+            const results = querySnapshot.docs.map(doc => ({ ...doc.data(), id: doc.id }))
             res.status(200).json({ data: results })
-        } catch (error) {
-            res.status(500).json({ message: error.message || "Internal server error" })
+        } catch (err) {
+            res.status(500).json({ message: err.message || "Internal server error" })
         }
     }
 }

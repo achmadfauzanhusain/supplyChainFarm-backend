@@ -1,21 +1,13 @@
-const { initializeApp } = require("firebase/app")
-const { getFirestore, collection } = require("firebase/firestore")
+const admin = require("firebase-admin")
+const serviceAccount = require("./dsupplychain.json")
 
-const { firebaseKey, firebaseAuthDomain, firebaseMessaginSenderId, firebaseAppId } = require("../config")
-
-const firebaseConfig = {
-    apiKey: firebaseKey,
-    authDomain: firebaseAuthDomain,
-    projectId: "dsupplychain-130806",
-    storageBucket: "dsupplychain-130806.firebasestorage.app",
-    messagingSenderId: firebaseMessaginSenderId,
-    appId: firebaseAppId,
-    measurementId: "G-K8EWBDH1Q9"
+if (!admin.apps.length) {
+  admin.initializeApp({
+    credential: admin.credential.cert(serviceAccount)
+  })
 }
 
-initializeApp(firebaseConfig);
-
-const db = getFirestore()
-const colSupplier = collection(db, "suppliers")
+const db = admin.firestore()
+const colSupplier = db.collection("suppliers")
 
 module.exports = { db, colSupplier }
