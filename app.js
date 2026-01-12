@@ -10,7 +10,7 @@ const testRouter = require('./app/test/router');
 const supplierRouter = require('./app/supplier/router');
 
 const corsOptions = {
-  origin: ['https://tblochain.com', 'https://tblo-frontend-admin.vercel.app/', 'http://localhost:3000']
+  origin: ['https://tblochain.com', 'https://tblo-frontend-admin.vercel.app', 'http://localhost:3000']
 };
 
 const app = express()
