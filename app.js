@@ -9,12 +9,12 @@ const methodOverride = require('method-override');
 const testRouter = require('./app/test/router');
 const supplierRouter = require('./app/supplier/router');
 
-// const corsOptions = {
-//   origin: ['http://localhost:3000']
-// };
+const corsOptions = {
+  origin: ['https://tblochain.com', 'https://tblo-server.vercel.app']
+};
 
 const app = express()
-app.use(cors())
+app.use(cors(corsOptions))
 const URI = "/api/v1"
 
 app.use(methodOverride('_method'));
