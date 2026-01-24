@@ -5,9 +5,9 @@ const { ethers } = require("ethers")
 module.exports = {
     register: async(req, res) => {
         try {
-            const { supplierName, origin, emailSupplier, ethWalletAddress, description } = req.body
+            const { supplierName, origin, emailSupplier, ethWalletAddress, description, phone } = req.body
 
-            if(!supplierName || !origin || !emailSupplier || !ethWalletAddress || !description) {
+            if(!supplierName || !origin || !emailSupplier || !ethWalletAddress || !description || !phone) {
                 return res.status(400).json({ message: "All fields are required" })
             }
 
@@ -30,6 +30,7 @@ module.exports = {
                     emailSupplier,
                     ethWalletAddress,
                     description,
+                    phone,
                     status: "unverified",
                     createdAt: admin.firestore.FieldValue.serverTimestamp()
                 })
