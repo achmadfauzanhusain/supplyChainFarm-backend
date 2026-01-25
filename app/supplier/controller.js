@@ -128,6 +128,7 @@ module.exports = {
                 .orderBy("supplierName")
                 .startAt(supplierName)
                 .endAt(supplierName + "\uf8ff")
+                .where("status", "==", "verified")
                 .get()
             
             const results = querySnapshot.docs.map(doc => ({ ...doc.data(), id: doc.id }))
