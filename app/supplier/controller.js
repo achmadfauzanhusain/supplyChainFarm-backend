@@ -125,10 +125,10 @@ module.exports = {
         try {
             const { supplierName } = req.body
             const querySnapshot = await colSupplier
+                .where("status", "==", "verified")
                 .orderBy("supplierName")
                 .startAt(supplierName)
                 .endAt(supplierName + "\uf8ff")
-                .where("status", "==", "verified")
                 .get()
             
             const results = querySnapshot.docs.map(doc => ({ ...doc.data(), id: doc.id }))
